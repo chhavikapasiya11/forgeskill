@@ -72,7 +72,31 @@ header .btn:hover {
     transition: box-shadow 0.5s ease-in-out;
   }
   
-
+  .overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+    font-size: 1.5rem;
+    z-index: 1000;
+  }
+  
+  .overlay-text {
+    margin-bottom: 20px;
+  }
+  
+  .disabled-card {
+    opacity: 0.5;
+    pointer-events: none; /* Prevents clicks */
+  }
+  
 @media (max-width: 768px) {
     .container {
         padding: 20px;
