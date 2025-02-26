@@ -1,0 +1,84 @@
+
+body {
+    font-family: 'Arial', sans-serif;
+    background: linear-gradient(135deg, #afbbda, #b2cfe1); 
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+
+
+.container {
+    max-width: 900px;
+}
+
+header {
+    background:  
+    url('https://media.istockphoto.com/id/1030740382/photo/knowledge-transfer-and-communication.jpg?s=612x612&w=0&k=20&c=N6GLXWUr6ymt4hNmSb_XnbXXh_hHC1gYZQ-XlrWPxvo='); 
+background-size: cover;
+background-position: center;
+background-repeat: no-repeat;
+    color: white;
+    font-weight:1300;
+    font-size:x-large;
+    padding: 40px;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+header .btn {
+    font-size: 1.2rem;
+    font-weight: bold;
+    padding: 10px 20px;
+    border-radius: 5px;
+    transition: 0.3s;
+    background-color: #0d47a1;
+    border: none;
+}
+
+header .btn:hover {
+    transform: scale(1.05);
+    background-color: #08306e !important;
+}
+
+
+.card {
+    background: linear-gradient(135deg, #ffffff, #dfe9f3); 
+    border-radius: 10px;
+    box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+    transition: 0.3s;
+    text-align: center;
+    border: 1px solid #2196f3;
+}
+
+.card h3 {
+    color: #0d47a1;
+}
+
+.card p {
+    color: #555;
+}
+
+.card:hover {
+    transform: scale(1.05);
+}
+
+
+.section-title {
+    color: #0d47a1;
+}
+.hover-shadow:hover {
+    box-shadow: 0px 4px 12px rgba(62, 186, 203, 0.2);
+    transition: box-shadow 0.5s ease-in-out;
+  }
+  
+
+@media (max-width: 768px) {
+    .container {
+        padding: 20px;
+    }
+
+    header {
+        text-align: center;
+    }
+}
