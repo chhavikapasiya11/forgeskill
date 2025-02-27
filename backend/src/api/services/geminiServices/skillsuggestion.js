@@ -1,14 +1,11 @@
-
-
-
+//src/api/services/geminiServices/skillSuggestion.js
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const Profile = require("../models/Profile");
 const Suggestion = require("../models/Suggestion");
 require("dotenv").config();
-
-// Initialize Gemini API
 const API_KEY = process.env.GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro" });
 
 /**
  * Generates skill suggestions for a user based on their profile data
@@ -28,7 +25,6 @@ async function generateSkillSuggestions(userId) {
     const prompt = createGeminiPrompt(profile);
     
     // 3. Call Gemini API
-    const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro" });
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const responseText = response.text();
@@ -56,11 +52,7 @@ async function generateSkillSuggestions(userId) {
   }
 }
 
-/**
- * Creates a prompt for Gemini based on the user's profile
- * @param {Object} profile - The user's profile
- * @returns {string} - The prompt for Gemini
- */
+
 function createGeminiPrompt(profile) {
   // Extract relevant information from profile
   const { currentSkills, targetSkills, profileType, experience } = profile;
@@ -117,11 +109,7 @@ Respond only with the JSON array and no other text.
 `;
 }
 
-/**
- * Parses the Gemini response into a structured format
- * @param {string} responseText - The text response from Gemini
- * @returns {Array} - Parsed skill suggestions
- */
+
 function parseGeminiResponse(responseText) {
   try {
     // Clean up the response to ensure it's valid JSON

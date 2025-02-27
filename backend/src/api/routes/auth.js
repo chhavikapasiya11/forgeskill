@@ -1,13 +1,23 @@
 const express = require("express");
 const router = express.Router();
-const User = require("../models/User");
-const Profile = require("../model/Profile");
+const User = require("../../models/User");
+const Profile = require("../../models/profile");
 const { body, validationResult } = require("express-validator");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
 const JWT_SECRET = process.env.JWT_SECRET || "default-secret-key";
-const auth = require("../middleware/auth");
+const getUserFromToken = (req) => {
+  const token = req.header("Authorization");
+  if (!token) return null;
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    return decoded.userId;
+  } catch (error) {
+    return null;
+  }
+};
 
 // Register a new user with automatic profile creation
 router.post(
@@ -38,7 +48,6 @@ router.post(
       // Create an empty profile for the user
       const profile = new Profile({
         user: user.id
-        // No need to specify other fields as they have defaults
       });
       await profile.save();
 
@@ -83,15 +92,17 @@ router.post(
 );
 
 // Get current user with profile
-router.get("/me", auth, async (req, res) => {
+router.get("/me", async (req, res) => {
+  const userId = getUserFromToken(req);
+  if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
   try {
-    const user = await User.findById(req.user.id).select("-password");
-    const profile = await Profile.findOne({ user: req.user.id });
-    
-    res.json({
-      user,
-      profile
-    });
+    const user = await User.findById(userId).select("-password");
+    const profile = await Profile.findOne({ user: userId });
+
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    res.json({ user, profile });
   } catch (error) {
     console.error(error.message);
     res.status(500).send("Server Error");
@@ -102,49 +113,34 @@ router.get("/me", auth, async (req, res) => {
 router.put(
   "/update-profile",
   [
-    auth,
-    // All validations are kept but none are required
     body("currentSkills").optional().isArray(),
     body("bio").optional().isString(),
     body("profileType").optional().isIn(["student", "working professional", "other"]),
     body("targetCompanies").optional().isArray(),
-    body("targetSkills").optional().isArray()
+    body("targetSkills").optional().isArray(),
   ],
   async (req, res) => {
+    const userId = getUserFromToken(req);
+    if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
     const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
+    if (!errors.isEmpty()) return res.status(400).json({ errors: errors.array() });
 
     try {
-      const {
-        currentSkills,
-        bio,
-        profileType,
-        targetCompanies,
-        targetSkills
-      } = req.body;
+      const { currentSkills, bio, profileType, targetCompanies, targetSkills } = req.body;
 
-      // Build profile update object
-      const profileFields = {};
+      const profileFields = { user: userId };
       if (currentSkills !== undefined) profileFields.currentSkills = currentSkills;
       if (bio !== undefined) profileFields.bio = bio;
       if (profileType !== undefined) profileFields.profileType = profileType;
       if (targetCompanies !== undefined) profileFields.targetCompanies = targetCompanies;
       if (targetSkills !== undefined) profileFields.targetSkills = targetSkills;
 
-      // Find and update profile
-      let profile = await Profile.findOne({ user: req.user.id });
-      
+      let profile = await Profile.findOne({ user: userId });
+
       if (profile) {
-        profile = await Profile.findOneAndUpdate(
-          { user: req.user.id },
-          { $set: profileFields },
-          { new: true }
-        );
+        profile = await Profile.findOneAndUpdate({ user: userId }, { $set: profileFields }, { new: true });
       } else {
-        // Create profile if somehow it doesn't exist
-        profileFields.user = req.user.id;
         profile = new Profile(profileFields);
         await profile.save();
       }
@@ -156,87 +152,5 @@ router.put(
     }
   }
 );
-
-// Add experience to profile
-router.put(
-  "/add-experience",
-  [
-    auth,
-    body("role").optional().isString(),
-    body("company").optional().isString(),
-    body("from").optional().isString(),
-    body("current").optional().isBoolean(),
-    body("to").optional().isString(),
-    body("description").optional().isString()
-  ],
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    try {
-      const {
-        role,
-        company,
-        from,
-        to,
-        current,
-        description
-      } = req.body;
-
-      const newExp = {};
-      if (role !== undefined) newExp.role = role;
-      if (company !== undefined) newExp.company = company;
-      if (from !== undefined) newExp.from = from;
-      if (to !== undefined) newExp.to = to;
-      if (current !== undefined) newExp.current = current;
-      if (description !== undefined) newExp.description = description;
-
-      const profile = await Profile.findOne({ user: req.user.id });
-      
-      if (!profile) {
-        return res.status(404).json({ error: "Profile not found" });
-      }
-
-      profile.experience.unshift(newExp);
-      await profile.save();
-
-      res.json(profile);
-    } catch (error) {
-      console.error(error.message);
-      res.status(500).send("Server Error");
-    }
-  }
-);
-
-// Remove experience from profile
-router.delete("/delete-experience/:exp_id", auth, async (req, res) => {
-  try {
-    const profile = await Profile.findOne({ user: req.user.id });
-    
-    if (!profile) {
-      return res.status(404).json({ error: "Profile not found" });
-    }
-
-    // Get remove index
-    const removeIndex = profile.experience
-      .map(item => item.id)
-      .indexOf(req.params.exp_id);
-
-    if (removeIndex === -1) {
-      return res.status(404).json({ error: "Experience not found" });
-    }
-
-    // Remove experience
-    profile.experience.splice(removeIndex, 1);
-    await profile.save();
-
-    res.json(profile);
-  } catch (error) {
-    console.error(error.message);
-    res.status(500).send("Server Error");
-  }
-});
 
 module.exports = router;
