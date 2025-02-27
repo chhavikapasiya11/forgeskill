@@ -1,4 +1,5 @@
 require('dotenv').config();
+const authRoutes = require('./src/api/routes/auth');
 const connectToMongo = require('./db');
 const express = require('express');
 const cors = require('cors');
@@ -13,7 +14,6 @@ app.use(express.json());
 app.use(cors());
 
 // Routes
-const authRoutes = require('./routes/auth');
 if (authRoutes && typeof authRoutes === 'function') {
     app.use('/api/auth', authRoutes);
 } else {

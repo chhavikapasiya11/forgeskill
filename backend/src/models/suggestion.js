@@ -109,13 +109,7 @@ const MentorSuggestionSchema = new Schema({
             type: Number, // 0-100 indicating how good a mentor match
             default: 0
         },
-        //currentRole: String,
-        //company: String,
-        // Only populated if the mentor has made this information public
-        // contactInfo: {
-        //     email: String,
-        //     linkedin: String
-        // }
+        
     }]
 });
 
