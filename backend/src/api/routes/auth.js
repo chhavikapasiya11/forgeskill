@@ -51,7 +51,7 @@ router.post(
       });
       await profile.save();
 
-      const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "1h" });
+      const token = jwt.sign({ userId: user.id }, JWT_SECRET, { expiresIn: "30d" });
       res.json({ 
         token,
         message: "Account created successfully with empty profile" 
