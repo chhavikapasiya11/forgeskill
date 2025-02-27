@@ -1,5 +1,7 @@
+const mongoose = require("mongoose");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const Suggestion = require("../models/Suggestion");
+const JobRoleSuggestion = require('../../../models/suggestion');
+const {CompanySuggestion} = require("../../../models/suggestion"); 
 require("dotenv").config();
 
 // Initialize Gemini API
@@ -7,27 +9,19 @@ const API_KEY = process.env.GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro" });
 
-
-/**
- * Generates company suggestions based on user's job role recommendations
- * @param {string} userId - The ID of the user to generate company suggestions for
- * @returns {Promise} - Promise containing the updated suggestion document
- */
 async function generateCompanySuggestions(userId) {
   try {
     // 1. Get the user's current suggestion document with job role suggestions
-    let suggestion = await Suggestion.findOne({
+    let jobsuggestion = await suggestedJobRoles.findOne({
       user: userId,
-      isActive: true,
-      suggestedJobRoles: { $exists: true, $ne: [] }
     }).sort({ generatedAt: -1 });
     
-    if (!suggestion || !suggestion.suggestedJobRoles || suggestion.suggestedJobRoles.length === 0) {
+    if (!jobsuggestion || !jobsuggestion.data || suggestedJobRoles.data.length === 0) {
       throw new Error("No job role suggestions found. Generate job role suggestions first.");
     }
     
     // 2. Prepare data for Gemini API
-    const jobRoles = suggestion.suggestedJobRoles.map(role => ({
+    const jobRoles = suggestedJobRoles.data.map(role => ({
       title: role.title,
       matchScore: role.matchScore,
       skills: role.skillsMatch ? role.skillsMatch.map(s => s.skill) : []

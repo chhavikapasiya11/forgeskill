@@ -1,87 +1,67 @@
-const Profile = require("../models/Profile");
-const Suggestion = require("../models/Suggestion");
+const mongoose = require("mongoose");
+//const MentorSuggestion = mongoose.model("MentorSuggestion", MentorSuggestionSchema);
+const Profile = require('../../../models/profile');
+const {MentorSuggestion} = require("../../../models/suggestion"); 
 
-/**
- * Finds up to 3 real user mentors for each skill suggestion from the database
- * @param {string} userId - The ID of the user to find mentors for
- * @returns {Promise} - Promise containing the updated suggestion document
- */
-async function findRealMentorsForSki
-
-lls(userId) {
-  try {
-    // 1. Get the user's current suggestion document with skill suggestions
-    let suggestion = await Suggestion.findOne({
-      user: userId,
-      isActive: true,
-      nextSkills: { $exists: true, $ne: [] }
-    }).sort({ generatedAt: -1 });
-    
-    if (!suggestion || !suggestion.nextSkills || suggestion.nextSkills.length === 0) {
-      throw new Error("No skill suggestions found. Generate skill suggestions first.");
-    }
-    
-    // Clear existing mentor suggestions
-    suggestion.mentorSuggestions = [];
-    
-    // 2. Process each suggested skill
-    for (const skillSuggestion of suggestion.nextSkills) {
-      const skill = skillSuggestion.skill;
-      const difficultyLevel = skillSuggestion.difficultyLevel;
-      
-      // Find users who have this skill in their currentSkills
-      const potentialMentors = await Profile.find({
-        'currentSkills': { $in: [skill] },
-        'user': { $ne: userId } // Exclude the current user
-      }).populate('user', 'username email');
-      
-      if (potentialMentors.length > 0) {
-        // Calculate match scores based on skill level needs
-        const mentors = [];
-        
-        for (const mentorProfile of potentialMentors) {
-          // Skip if user object is not populated
-          if (!mentorProfile.user) continue;
-          
-          const matchScore = calculateMentorMatchScore(mentorProfile, skill, difficultyLevel);
-          
-          mentors.push({
-            userId: mentorProfile.user._id,
-            matchScore
-          });
-        }
-        
-        // Sort by match score and take top 3
-        mentors.sort((a, b) => b.matchScore - a.matchScore);
-        const topMentors = mentors.slice(0, 3);
-        
-        // Only add to suggestion if we found at least one mentor
-        if (topMentors.length > 0) {
-          suggestion.mentorSuggestions.push({
-            skill,
-            mentors: topMentors
-          });
+// Function to find mentors for skills
+async function findRealMentorsForSkills(userId) {
+    try {
+      const suggestion = await SkillSuggestion.findOne({ user: userId }).sort({ generatedAt: -1 });
+  
+      if (!suggestion || !suggestion.data || suggestion.data.length === 0) {
+        throw new Error("No skill suggestions found. Generate skill suggestions first.");
+      }
+  
+      const data = [];
+  
+      for (const skills of suggestion.data) {
+        const skill = skills.skill;
+        const difficultyLevel = skills.difficultyLevel;
+  
+        // Find mentors
+        const potentialMentors = await Profile.find({
+          currentSkills: { $in: [skill] },
+          user: { $ne: userId },
+        }).populate("user", "username email");
+  
+        if (potentialMentors.length > 0) {
+          const mentors = [];
+  
+          for (const mentorProfile of potentialMentors) {
+            if (!mentorProfile.user) continue;
+  
+            const matchScore = calculateMentorMatchScore(mentorProfile, skill, difficultyLevel);
+            mentors.push({
+              userId: mentorProfile.user._id,
+              matchScore,
+            });
+          }
+  
+          mentors.sort((a, b) => b.matchScore - a.matchScore);
+          const topMentors = mentors.slice(0, 3);
+  
+          if (topMentors.length > 0) {
+            data.push({
+              skill: skill,
+              mentors: topMentors,
+            });
+          }
         }
       }
+  
+      const mentorSuggestion = new MentorSuggestion({
+        user: userId,
+        data: data,
+      });
+  
+      await mentorSuggestion.save();
+      return mentorSuggestion;
+    } catch (error) {
+      console.error("Error finding mentors for skills:", error);
+      throw error;
     }
-    
-    // 3. Save the updated suggestion document
-    await suggestion.save();
-    return suggestion;
-    
-  } catch (error) {
-    console.error("Error finding mentors for skills:", error);
-    throw error;
   }
-}
 
-/**
- * Calculate a match score for a potential mentor based on their profile and the skill difficulty
- * @param {Object} mentorProfile - The mentor's profile
- * @param {String} skill - The skill to match
- * @param {String} difficultyLevel - The difficulty level of the skill
- * @returns {Number} - A match score from 0-100
- */
 function calculateMentorMatchScore(mentorProfile, skill, difficultyLevel) {
     return Math.floor(Math.random() * (80 - 40 + 1)) + 40;
 }  

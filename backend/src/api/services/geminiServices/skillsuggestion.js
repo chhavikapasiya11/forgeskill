@@ -1,51 +1,34 @@
 //src/api/services/geminiServices/skillSuggestion.js
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const Profile = require("../models/Profile");
-const Suggestion = require("../models/Suggestion");
+const Profile = require('../../../models/profile');
+const {SkillSuggestion} = require("../../../models/suggestion"); 
+//const SkillSuggestion = mongoose.model("SkillSuggestion", SkillSuggestionSchema);
 require("dotenv").config();
 const API_KEY = process.env.GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(API_KEY);
 const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro" });
 
-/**
- * Generates skill suggestions for a user based on their profile data
- * @param {string} userId - The ID of the user to generate suggestions for
- * @returns {Promise} - Promise containing the saved suggestion document
- */
 async function generateSkillSuggestions(userId) {
   try {
-    // 1. Fetch the user's profile
     const profile = await Profile.findOne({ user: userId }).populate("user", "username email");
-    
     if (!profile) {
       throw new Error("Profile not found for this user");
     }
 
-    // 2. Prepare the prompt for Gemini
     const prompt = createGeminiPrompt(profile);
-    
-    // 3. Call Gemini API
     const result = await model.generateContent(prompt);
     const response = await result.response;
     const responseText = response.text();
-    
-    // 4. Parse the response
-    const suggestedSkills = parseGeminiResponse(responseText);
-    
-    // 5. Save to database
-    const suggestion = new Suggestion({
+
+    const Data = parseGeminiResponse(responseText);
+
+    const suggestedSkills = new SkillSuggestion({
       user: userId,
-      source: "gemini_api",
-      generationPrompt: prompt,
-      nextSkills: suggestedSkills,
-      generatedAt: new Date(),
-      expiresAt: new Date(Date.now() + 30*24*60*60*1000), // 30 days from now
-      isActive: true
+      data: Data,
     });
-    
-    await suggestion.save();
-    return suggestion;
-    
+
+    await suggestedSkills.save();
+    return suggestedSkills;
   } catch (error) {
     console.error("Error generating skill suggestions:", error);
     throw error;
@@ -53,8 +36,8 @@ async function generateSkillSuggestions(userId) {
 }
 
 
+
 function createGeminiPrompt(profile) {
-  // Extract relevant information from profile
   const { currentSkills, targetSkills, profileType, experience } = profile;
   
   // Format experience for the prompt
@@ -90,11 +73,11 @@ Format your response as a valid JSON array of skill objects with the following s
 [
   {
     "skill": "Skill name",
-    "reason": "market trend",
+    "reason": "market trend", //option{enum: 'market trend', 'career progression', 'profile completion', 'job requirement', 'ai recommended',}
     "marketDemand": 85,
-    "difficultyLevel": "intermediate",
+    "difficultyLevel": "intermediate", // (only options ='beginner', 'intermediate', 'advanced',)
     "estimatedTimeToLearn": 40,
-    "relatedCourses": [
+    "relatedCourses": [  //it should be real
       {
         "title": "Course title",
         "platform": "Platform name",
@@ -112,17 +95,13 @@ Respond only with the JSON array and no other text.
 
 function parseGeminiResponse(responseText) {
   try {
-    // Clean up the response to ensure it's valid JSON
     let cleanedResponse = responseText.trim();
-    
-    // If response starts with a markdown code block, extract just the JSON
-    if (cleanedResponse.startsWith("```json")) {
+        if (cleanedResponse.startsWith("```json")) {
       cleanedResponse = cleanedResponse.replace(/```json\n/, "").replace(/\n```$/, "");
     } else if (cleanedResponse.startsWith("```")) {
       cleanedResponse = cleanedResponse.replace(/```\n/, "").replace(/\n```$/, "");
     }
     
-    // Parse the JSON response
     const suggestedSkills = JSON.parse(cleanedResponse);
     
     // Validate the structure and ensure it matches our schema

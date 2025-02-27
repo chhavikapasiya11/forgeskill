@@ -1,6 +1,9 @@
+const mongoose = require("mongoose");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const Profile = require("../models/Profile");
-const Suggestion = require("../models/Suggestion");
+const Profile = require("../../../models/profile");
+const {JobRoleSuggestion} = require("../../../models/suggestion"); 
+
+//const Suggestion = require("../models/Suggestion");
 require("dotenv").config();
 
 // Initialize Gemini API
@@ -13,64 +16,43 @@ const genAI = new GoogleGenerativeAI(API_KEY);
  * @returns {Promise} - Promise containing the saved suggestion document
  */
 async function generateJobRoleSuggestions(userId) {
-  try {
-    // 1. Fetch the user's profile
-    const profile = await Profile.findOne({ user: userId }).populate("user", "username email");
-    
-    if (!profile) {
-      throw new Error("Profile not found for this user");
-    }
-
-    // 2. Prepare the prompt for Gemini
-    const prompt = createJobRolePrompt(profile);
-    
-    // 3. Call Gemini API
-    const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro" });
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const responseText = response.text();
-    
-    // 4. Parse the response
-    const suggestedJobRoles = parseGeminiResponse(responseText);
-    
-    // 5. Save to database
-    // First, check if there's an existing active suggestion for this user
-    let suggestion = await Suggestion.findOne({
-      user: userId,
-      isActive: true
-    });
-    
-    if (suggestion) {
-      // Update existing suggestion with job roles
-      suggestion.suggestedJobRoles = suggestedJobRoles;
-      suggestion.updatedAt = new Date();
-    } else {
-      // Create new suggestion document
-      suggestion = new Suggestion({
+    try {
+      // 1. Fetch the user's profile
+      const profile = await Profile.findOne({ user: userId }).populate("user", "username email");
+      
+      if (!profile) {
+        throw new Error("Profile not found for this user");
+      }
+  
+      // 2. Prepare the prompt for Gemini
+      const prompt = createJobRolePrompt(profile);
+      
+      // 3. Call Gemini API
+      const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro" });
+      const result = await model.generateContent(prompt);
+      const response = await result.response;
+      const responseText = response.text();
+      
+      // 4. Parse the response
+      const Data = parseGeminiResponse(responseText);
+      
+      // 5. Structure the data for saving
+      const jobRoleSuggestions = new JobRoleSuggestion({
         user: userId,
-        source: "gemini_api",
-        generationPrompt: prompt,
-        suggestedJobRoles: suggestedJobRoles,
-        generatedAt: new Date(),
-        expiresAt: new Date(Date.now() + 30*24*60*60*1000), // 30 days from now
-        isActive: true
+        data: Data
       });
+  
+      // 6. Save to database
+      await jobRoleSuggestions.save();
+  
+      return jobRoleSuggestions;
+      
+    } catch (error) {
+      console.error("Error generating job role suggestions:", error);
+      throw error;
     }
-    
-    await suggestion.save();
-    return suggestion;
-    
-  } catch (error) {
-    console.error("Error generating job role suggestions:", error);
-    throw error;
   }
-}
-
-/**
- * Creates a prompt for Gemini based on the user's profile to suggest job roles
- * @param {Object} profile - The user's profile
- * @returns {string} - The prompt for Gemini
- */
+  
 function createJobRolePrompt(profile) {
   // Extract relevant information from profile
   const { currentSkills, targetSkills, profileType, experience } = profile;
@@ -142,11 +124,7 @@ Respond only with the JSON array and no other text.
 `;
 }
 
-/**
- * Parses the Gemini response into a structured format
- * @param {string} responseText - The text response from Gemini
- * @returns {Array} - Parsed job role suggestions
- */
+
 function parseGeminiResponse(responseText) {
   try {
     // Clean up the response to ensure it's valid JSON
