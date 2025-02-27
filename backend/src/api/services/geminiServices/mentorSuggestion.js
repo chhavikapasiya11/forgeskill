@@ -6,7 +6,9 @@ const Suggestion = require("../models/Suggestion");
  * @param {string} userId - The ID of the user to find mentors for
  * @returns {Promise} - Promise containing the updated suggestion document
  */
-async function findRealMentorsForSkills(userId) {
+async function findRealMentorsForSki
+
+lls(userId) {
   try {
     // 1. Get the user's current suggestion document with skill suggestions
     let suggestion = await Suggestion.findOne({
