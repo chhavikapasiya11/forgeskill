@@ -1,6 +1,6 @@
 
 const mongoose = require("mongoose");
-const mongoURI = process.env.MONGO_URI || "mongodb://localhost:27017/forge";
+const mongoURI = process.env.MONGO_URI || "mongodb://chhavikapasiya39:chhavi39@undefined/?replicaSet=atlas-g6vhh9-shard-0&ssl=true&authSource=admin";
 const connectToMongo = () => {
     mongoose
         .connect(mongoURI, {

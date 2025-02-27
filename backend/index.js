@@ -5,7 +5,7 @@ const cors = require('cors');
 
 const app = express();
 connectToMongo();
-
+console.log("mongodb connected");
 const port = process.env.PORT || 8000;
 
 // Middleware to parse JSON
