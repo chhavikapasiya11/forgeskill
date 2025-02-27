@@ -67,7 +67,6 @@ const JobRoleSuggestionSchema = new Schema({
     },
     popularCompanies: [{
         name: String,
-        websiteUrl: String
     }]
 });
 
