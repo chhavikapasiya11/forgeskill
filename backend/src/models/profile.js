@@ -34,26 +34,34 @@ const ProfileSchema = new Schema({
     user: {
         type: Schema.Types.ObjectId,
         ref: 'User',
-        required: true
+        required: true // Keep this required to maintain the relationship with User
     },
     currentSkills: {
         type: [String],
-        required: true
+        required: false, // Changed from required: true
+        default: []
     },
     bio: {
-        type: String
+        type: String,
+        default: ""
     },
     profileType: {
         type: String,
         enum: ['student', 'working professional', 'other'],
-        required: true
+        required: false, // Changed from required: true
+        default: "other"
     },
-    experience: [ExperienceSchema],
+    experience: {
+        type: [ExperienceSchema],
+        default: []
+    },
     targetCompanies: {
-        type: [String]
+        type: [String],
+        default: []
     },
     targetSkills: {
-        type: [String]
+        type: [String],
+        default: []
     },
     createdAt: {
         type: Date,
@@ -64,7 +72,6 @@ const ProfileSchema = new Schema({
         default: Date.now
     }
 });
-
 // Update the updatedAt field on save
 ProfileSchema.pre('save', function(next) {
     this.updatedAt = Date.now();
