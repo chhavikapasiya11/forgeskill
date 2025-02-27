@@ -1,12 +1,4 @@
-//models/profile.js
 
-// ref user model
-// current skill string[]
-//bio
-//what describe u :option:student,working prof ,other etc
-//experience: [arr] //role+comp
-//target comp []
-//target skill[]
 
 const mongoose = require("mongoose");
 const { Schema } = mongoose;
