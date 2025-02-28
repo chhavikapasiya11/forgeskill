@@ -1,40 +1,39 @@
-const mongoose = require("mongoose");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const JobRoleSuggestion = require('../../../models/suggestion');
-const {CompanySuggestion} = require("../../../models/suggestion"); 
+const CompanySuggestion = require('../../../models/suggestion').CompanySuggestion;
 require("dotenv").config();
-
 // Initialize Gemini API
 const API_KEY = process.env.GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro" });
+const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-async function generateCompanySuggestions(userId) {
+ async function generateCompanySuggestions(userId) {
   try {
-    // 1. Get the user's current suggestion document with job role suggestions
-    let jobsuggestion = await suggestedJobRoles.findOne({
+    let jobsuggestion = await JobRoleSuggestion.findOne({ 
       user: userId,
+      isActive: true
     }).sort({ generatedAt: -1 });
-    
-    if (!jobsuggestion || !jobsuggestion.data || suggestedJobRoles.data.length === 0) {
+    if (!jobsuggestion || !jobsuggestion.data || jobsuggestion.data.length === 0) {
       throw new Error("No job role suggestions found. Generate job role suggestions first.");
     }
     
     // 2. Prepare data for Gemini API
-    const jobRoles = suggestedJobRoles.data.map(role => ({
+    const jobRoles = jobsuggestion.data.map(role => ({
       title: role.title,
       matchScore: role.matchScore,
       skills: role.skillsMatch ? role.skillsMatch.map(s => s.skill) : []
     }));
     
     // 3. Get company suggestions for these job roles from Gemini
-    const companySuggestions = await getCompanySuggestionsFromGemini(jobRoles);
+    const data = await getCompanySuggestionsFromGemini(jobRoles);
     
     // 4. Update the suggestion document with company suggestions
-    suggestion.suggestedCompanies = companySuggestions;
-    await suggestion.save();
-    
-    return suggestion;
+    const companySuggestions= new CompanySuggestion({
+      user:userId,
+      data: data
+    });
+    await companySuggestions.save();
+    return companySuggestions;
   } catch (error) {
     console.error("Error generating company suggestions:", error);
     throw error;

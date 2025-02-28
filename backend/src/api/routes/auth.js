@@ -6,7 +6,7 @@ const { body, validationResult } = require("express-validator");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 require("dotenv").config();
-const JWT_SECRET = process.env.JWT_SECRET || "default-secret-key";
+const JWT_SECRET = process.env.JWT_SECRET;
 const getUserFromToken = (req) => {
   const token = req.header("Authorization");
   if (!token) return null;

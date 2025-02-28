@@ -1,12 +1,12 @@
 //src/api/services/geminiServices/skillSuggestion.js
 const { GoogleGenerativeAI } = require("@google/generative-ai");
+//const { getGeminiModel } = require("../../../../gemini");
 const Profile = require('../../../models/profile');
 const {SkillSuggestion} = require("../../../models/suggestion"); 
-//const SkillSuggestion = mongoose.model("SkillSuggestion", SkillSuggestionSchema);
 require("dotenv").config();
 const API_KEY = process.env.GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro" });
+const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
 async function generateSkillSuggestions(userId) {
   try {

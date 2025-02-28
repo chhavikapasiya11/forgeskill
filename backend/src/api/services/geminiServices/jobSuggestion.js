@@ -1,20 +1,14 @@
-const mongoose = require("mongoose");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const Profile = require("../../../models/profile");
 const {JobRoleSuggestion} = require("../../../models/suggestion"); 
 
-//const Suggestion = require("../models/Suggestion");
 require("dotenv").config();
 
 // Initialize Gemini API
 const API_KEY = process.env.GEMINI_API_KEY;
 const genAI = new GoogleGenerativeAI(API_KEY);
 
-/**
- * Generates job role suggestions for a user based on their profile data
- * @param {string} userId - The ID of the user to generate suggestions for
- * @returns {Promise} - Promise containing the saved suggestion document
- */
+
 async function generateJobRoleSuggestions(userId) {
     try {
       // 1. Fetch the user's profile
@@ -28,7 +22,7 @@ async function generateJobRoleSuggestions(userId) {
       const prompt = createJobRolePrompt(profile);
       
       // 3. Call Gemini API
-      const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro" });
+      const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
       const result = await model.generateContent(prompt);
       const response = await result.response;
       const responseText = response.text();
@@ -127,10 +121,8 @@ Respond only with the JSON array and no other text.
 
 function parseGeminiResponse(responseText) {
   try {
-    // Clean up the response to ensure it's valid JSON
     let cleanedResponse = responseText.trim();
     
-    // If response starts with a markdown code block, extract just the JSON
     if (cleanedResponse.startsWith("```json")) {
       cleanedResponse = cleanedResponse.replace(/```json\n/, "").replace(/\n```$/, "");
     } else if (cleanedResponse.startsWith("```")) {
@@ -138,10 +130,10 @@ function parseGeminiResponse(responseText) {
     }
     
     // Parse the JSON response
-    const suggestedJobRoles = JSON.parse(cleanedResponse);
+    const generateJobRoleSuggestions = JSON.parse(cleanedResponse);
     
     // Validate the structure and ensure it matches our schema
-    return suggestedJobRoles.map(jobRole => ({
+    return generateJobRoleSuggestions.map(jobRole => ({
       title: jobRole.title,
       matchScore: jobRole.matchScore || 0,
       skillsMatch: Array.isArray(jobRole.skillsMatch) ? jobRole.skillsMatch.map(skill => ({
@@ -161,7 +153,6 @@ function parseGeminiResponse(responseText) {
     
   } catch (error) {
     console.error("Error parsing Gemini response:", error);
-    // Return empty array in case of parsing error
     return [];
   }
 }

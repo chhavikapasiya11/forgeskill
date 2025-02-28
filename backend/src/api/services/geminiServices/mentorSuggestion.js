@@ -1,7 +1,6 @@
-const mongoose = require("mongoose");
-//const MentorSuggestion = mongoose.model("MentorSuggestion", MentorSuggestionSchema);
 const Profile = require('../../../models/profile');
 const {MentorSuggestion} = require("../../../models/suggestion"); 
+const {SkillSuggestion} = require("../../../models/suggestion"); // Ensure this model exists
 
 // Function to find mentors for skills
 async function findRealMentorsForSkills(userId) {
