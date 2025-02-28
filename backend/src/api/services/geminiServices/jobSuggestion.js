@@ -13,7 +13,13 @@ async function generateJobRoleSuggestions(userId) {
     try {
       // 1. Fetch the user's profile
       const profile = await Profile.findOne({ user: userId }).populate("user", "username email");
-      
+      const job = await JobRoleSuggestion.findOne({user: userId})
+      if (job) {
+        await JobRoleSuggestion.deleteOne({ _id: job._id }); // Deletes the found job
+        console.log("Job role suggestion deleted successfully.");
+      } else {
+        console.log("No job role suggestion found for the user.");
+      }
       if (!profile) {
         throw new Error("Profile not found for this user");
       }
